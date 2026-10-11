@@ -1,0 +1,59 @@
+name: Combined PR 289 and 290 test build
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            target: x86_64-unknown-linux-musl
+            platform: linux/amd64
+          - arch: aarch64
+            target: aarch64-unknown-linux-musl
+            platform: linux/arm64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.85
+        with:
+          targets: ${{ matrix.target }}
+      - uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: combined-test-${{ matrix.target }}
+      - name: Build static Linux engine
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build operator UI
+        working-directory: web
+        run: npm ci && npm run build
+      - name: Package matching local app and integration
+        run: |
+          python3 scripts/third-party-notices.py > THIRD_PARTY
+          python3 test-build/package.py '${{ matrix.arch }}' 'target/${{ matrix.target }}/release/klar'
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - name: Build and smoke-test exact app wrapper
+        run: |
+          docker buildx build --platform '${{ matrix.platform }}' --load -t klar-combined:test dist/klar-test-${{ matrix.arch }}/local-apps/klar_nlu_pr289_pr290
+          docker run --rm --platform '${{ matrix.platform }}' klar-combined:test --help
+          docker run -d --name klar-smoke --platform '${{ matrix.platform }}' -p 127.0.0.1:10520:10520 -e KLAR_TOKEN=ci-synthetic-token klar-combined:test
+          python3 test-build/smoke.py
+          docker logs klar-smoke
+          docker stop klar-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: klar-combined-${{ matrix.arch }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,8 @@
+{
+  "common_staging_base": "26f701f3cfad1335fcda5c55a48250f7b52588e5",
+  "pr_289_head": "18a8a707925b31dbd4f3282244a350a06500a7e8",
+  "pr_290_head": "abc3c2b439bd0981b46c676ffe7719f07bb694f1",
+  "combined_changes_commit": "0eb0d258",
+  "conflicts": false,
+  "purpose": "Local test build, both unmerged PRs; not the upstream 2026.10.3 release."
+}
