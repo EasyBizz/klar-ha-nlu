@@ -176,3 +176,16 @@ fn requested_commands_work_with_the_reference_home_graph() {
         );
     }
 }
+
+#[test]
+fn dutch_switch_verbs_ask_which_laundry_appliance() {
+    let graph = klar_nlu::home::load_home_config(std::path::Path::new("tests/datasets/full_home/nl/home_config.yaml")).expect("dutch home");
+    for text in ["doe apparaat wasruimte", "zet apparaat wasruimte"] {
+        let out = parse(text, &graph, &mut Session::new(), &[], &Settings::pinned("nl"));
+        let ParseDecision::Clarify { options, .. } = out.decision else {
+            panic!("{text} should ask which appliance: {out:?}");
+        };
+        assert!(options.iter().any(|option| option.contains("washing_machine")), "{text}: {options:?}");
+        assert!(options.iter().any(|option| option.contains("dryer")), "{text}: {options:?}");
+    }
+}
