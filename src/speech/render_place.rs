@@ -1,6 +1,6 @@
 //! Locale tables for empty-place lines, colors, and HA state words.
 
-use crate::types::SpeechSnapshot;
+use crate::types::{SpeechSnapshot, UnitSystem};
 
 const COLORS: &[(&str, &str, &str)] = &[
     ("red", "rot", "red"),
@@ -106,6 +106,50 @@ const DE_STATE: &[(&str, &str)] = &[
     ("clear", "klar"),
 ];
 
+const CS_STATE: &[(&str, &str)] = &[
+    ("on", "zapnuto"),
+    ("off", "vypnuto"),
+    ("unavailable", "nedostupné"),
+    ("unknown", "neznámý stav"),
+    ("open", "otevřeno"),
+    ("closed", "zavřeno"),
+    ("locked", "zamčeno"),
+    ("unlocked", "odemčeno"),
+    ("playing", "přehrává se"),
+    ("paused", "pozastaveno"),
+    ("idle", "nečinný"),
+    ("heat", "topí"),
+    ("cool", "chladí"),
+    ("cloudy", "oblačno"),
+    ("partlycloudy", "částečně oblačno"),
+    ("rainy", "deštivo"),
+    ("sunny", "slunečno"),
+    ("clear", "jasno"),
+    ("home", "doma"),
+    ("not_home", "mimo domov"),
+    ("cleaning", "uklízí"),
+    ("docked", "v doku"),
+    ("returning", "vrací se do doku"),
+    ("charging", "nabíjí se"),
+    ("error", "chyba"),
+    ("detected", "detekováno"),
+    ("motion", "pohyb"),
+    ("no_motion", "bez pohybu"),
+    ("wet", "mokro"),
+    ("dry", "sucho"),
+    ("smoke", "kouř"),
+    ("gas", "plyn"),
+    ("tamper", "narušení"),
+    ("problem", "problém"),
+    ("occupied", "obsazeno"),
+    ("vacant", "volno"),
+    ("standby", "v pohotovostním režimu"),
+    ("armed_home", "zapnuto, když jste doma"),
+    ("armed_away", "zapnuto, když jste pryč"),
+    ("armed_night", "zapnuto na noc"),
+    ("disarmed", "vypnuto"),
+];
+
 pub(super) fn empty_place(pack: &str) -> String {
     let exact = EMPTY_PLACE.iter().find(|(code, _)| *code == pack);
     if let Some((_, line)) = exact {
@@ -117,6 +161,13 @@ pub(super) fn empty_place(pack: &str) -> String {
 
 pub(super) fn speak_state(raw: &str, pack: &str) -> String {
     let base = pack.split('-').next().unwrap_or(pack);
+    if base == "cs" {
+        return CS_STATE
+            .iter()
+            .find(|(key, _)| *key == raw)
+            .map(|(_, spoken)| (*spoken).to_string())
+            .unwrap_or_else(|| raw.replace('.', ","));
+    }
     if base == "de" {
         return DE_STATE
             .iter()
@@ -139,6 +190,27 @@ pub(super) fn speak_state(raw: &str, pack: &str) -> String {
         };
     }
     raw.to_string()
+}
+
+pub(super) fn czech_temperature_unit(temp: &str, unit_system: UnitSystem) -> &'static str {
+    let unit = if temp.contains(',') {
+        "stupně"
+    } else {
+        match temp.trim_start_matches('-').parse::<u32>().ok() {
+            Some(1) => "stupeň",
+            Some(2..=4) => "stupně",
+            _ => "stupňů",
+        }
+    };
+    if unit_system == UnitSystem::Imperial {
+        match unit {
+            "stupeň" => "stupeň Fahrenheita",
+            "stupně" => "stupně Fahrenheita",
+            _ => "stupňů Fahrenheita",
+        }
+    } else {
+        unit
+    }
 }
 
 pub(super) fn color_word(raw: Option<&str>, de: bool) -> Option<String> {

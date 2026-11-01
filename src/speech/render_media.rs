@@ -4,11 +4,13 @@ use crate::types::{SpeechEntity, SpeechSnapshot};
 
 use super::render_place::{slot, speak_state};
 
-pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: bool) -> Option<String> {
+pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: bool, cs: bool) -> Option<String> {
     Some(match name {
         "HassMediaPause" => {
             if de {
                 format!("{where_} ist pausiert.")
+            } else if cs {
+                format!("{where_}: přehrávání je pozastavené.")
             } else {
                 format!("{where_} is paused.")
             }
@@ -16,6 +18,8 @@ pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: 
         "HassMediaUnpause" => {
             if de {
                 format!("{where_} spielt weiter.")
+            } else if cs {
+                format!("Na {where_} přehrávání pokračuje.")
             } else {
                 format!("{where_} resumed playback.")
             }
@@ -23,6 +27,8 @@ pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: 
         "HassMediaNext" => {
             if de {
                 format!("Auf {where_} läuft der nächste Titel.")
+            } else if cs {
+                format!("Na {where_} hraje další skladba.")
             } else {
                 format!("The next track is playing on {where_}.")
             }
@@ -30,6 +36,8 @@ pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: 
         "HassMediaPrevious" => {
             if de {
                 format!("Auf {where_} läuft der vorherige Titel.")
+            } else if cs {
+                format!("Na {where_} hraje předchozí skladba.")
             } else {
                 format!("The previous track is playing on {where_}.")
             }
@@ -37,6 +45,8 @@ pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: 
         "HassMediaPlayerMute" => {
             if de {
                 format!("{where_} ist stumm.")
+            } else if cs {
+                format!("{where_}: zvuk je ztlumený.")
             } else {
                 format!("{where_} is muted.")
             }
@@ -44,6 +54,8 @@ pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: 
         "HassMediaPlayerUnmute" => {
             if de {
                 format!("Der Ton von {where_} ist an.")
+            } else if cs {
+                format!("Na {where_} je zvuk zapnutý.")
             } else {
                 format!("{where_} is unmuted.")
             }
@@ -51,14 +63,18 @@ pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: 
         "MassFavorite" => {
             if de {
                 "Als Favorit markiert.".into()
+            } else if cs {
+                "Přidáno do oblíbených.".into()
             } else {
                 "Marked as a favorite.".into()
             }
         }
-        "HassMediaSearchAndPlay" | "MassPlayMedia" => media_started(snap, de),
+        "HassMediaSearchAndPlay" | "MassPlayMedia" => media_started(snap, de, cs),
         "MassTransferQueue" => {
             if de {
                 "Die Warteschlange wurde übertragen.".into()
+            } else if cs {
+                "Fronta byla přenesena.".into()
             } else {
                 "The queue was transferred.".into()
             }
@@ -67,6 +83,8 @@ pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: 
             let level = slot(snap, "volume_level").unwrap_or("?");
             if de {
                 format!("Die Lautstärke von {where_} ist auf {level} Prozent.")
+            } else if cs {
+                format!("Hlasitost zařízení {where_} je nastavena na {level} procent.")
             } else {
                 format!("{where_} volume is set to {level} percent.")
             }
@@ -75,22 +93,27 @@ pub(super) fn media_action(name: &str, where_: &str, snap: &SpeechSnapshot, de: 
             let down = slot(snap, "volume_step").is_some_and(|step| step == "down");
             if de {
                 format!("Die Lautstärke von {where_} wurde {}.", if down { "verringert" } else { "erhöht" })
+            } else if cs {
+                format!("Hlasitost zařízení {where_} byla {}.", if down { "snížena" } else { "zvýšena" })
             } else {
                 format!("{where_} volume was {}.", if down { "lowered" } else { "raised" })
             }
         }
-        "MassGetQueue" => queue_speech(snap, de),
+        "MassGetQueue" => queue_speech(snap, de, cs),
         _ => return None,
     })
 }
 
-fn media_started(snap: &SpeechSnapshot, de: bool) -> String {
+fn media_started(snap: &SpeechSnapshot, de: bool, cs: bool) -> String {
     let player = snap.entities.iter().find(|entity| entity.domain == "media_player");
     let title = player.and_then(|entity| attr_str(entity, "media_title"));
     let artist = player.and_then(|entity| attr_str(entity, "media_artist"));
     match (title.as_deref(), artist.as_deref(), de) {
         (Some(title), Some(artist), true) => format!("Ich spiele {title} von {artist}."),
         (Some(title), None, true) => format!("Ich spiele {title}."),
+        (Some(title), Some(artist), false) if cs => format!("Přehrávám {title} od {artist}."),
+        (Some(title), None, false) if cs => format!("Přehrávám {title}."),
+        (_, _, false) if cs => "Přehrávání bylo spuštěno.".into(),
         (Some(title), Some(artist), false) => format!("Playing {title} by {artist}."),
         (Some(title), None, false) => format!("Playing {title}."),
         (_, _, true) => "Die Wiedergabe wurde gestartet.".into(),
@@ -98,7 +121,7 @@ fn media_started(snap: &SpeechSnapshot, de: bool) -> String {
     }
 }
 
-pub(super) fn media_status(snap: &SpeechSnapshot, status: &str, de: bool) -> String {
+pub(super) fn media_status(snap: &SpeechSnapshot, status: &str, de: bool, pack: &str) -> String {
     let Some(player) = snap.entities.iter().find(|entity| entity.domain == "media_player") else {
         return String::new();
     };
@@ -111,6 +134,13 @@ pub(super) fn media_status(snap: &SpeechSnapshot, status: &str, de: bool) -> Str
                     if pct.is_empty() { "Ich kann die Lautstärke nicht lesen.".into() } else { format!("Lautstärke ist {pct} Prozent.") };
                 if muted {
                     format!("{body} Der Ton ist stumm.")
+                } else {
+                    body
+                }
+            } else if pack == "cs" || pack.starts_with("cs-") {
+                let body = if pct.is_empty() { "Hlasitost se nepodařilo zjistit.".into() } else { format!("Hlasitost je {pct} procent.") };
+                if muted {
+                    format!("{body} Zvuk je ztlumený.")
                 } else {
                     body
                 }
@@ -131,6 +161,12 @@ pub(super) fn media_status(snap: &SpeechSnapshot, status: &str, de: bool) -> Str
                 } else {
                     "Der Ton ist an.".into()
                 }
+            } else if pack == "cs" || pack.starts_with("cs-") {
+                if muted {
+                    "Zvuk je ztlumený.".into()
+                } else {
+                    "Zvuk není ztlumený.".into()
+                }
             } else if muted {
                 "It is muted.".into()
             } else {
@@ -140,15 +176,30 @@ pub(super) fn media_status(snap: &SpeechSnapshot, status: &str, de: bool) -> Str
         "now_playing" | "player" => {
             let title = media_title(player);
             if title.is_empty() {
-                let spoken = speak_state(&player.state, if de { "de" } else { "en" });
+                let state_pack = if pack == "cs" || pack.starts_with("cs-") {
+                    pack
+                } else if de {
+                    "de"
+                } else {
+                    "en"
+                };
+                let spoken = speak_state(&player.state, state_pack);
                 if de {
                     format!("Der Player ist {spoken}.")
+                } else if pack == "cs" || pack.starts_with("cs-") {
+                    format!("Přehrávač: {spoken}.")
                 } else {
                     format!("The player is {spoken}.")
                 }
             } else if de {
                 let prefix = if player.state == "playing" { "Gerade läuft" } else { "Ausgewählt ist" };
                 format!("{prefix} {title}.")
+            } else if pack == "cs" || pack.starts_with("cs-") {
+                if player.state == "playing" {
+                    format!("Právě hraje {title}.")
+                } else {
+                    format!("Vybráno: {title}.")
+                }
             } else {
                 let prefix = if player.state == "playing" { "Now playing" } else { "Selected" };
                 format!("{prefix} {title}.")
@@ -158,7 +209,7 @@ pub(super) fn media_status(snap: &SpeechSnapshot, status: &str, de: bool) -> Str
     }
 }
 
-fn queue_speech(snap: &SpeechSnapshot, de: bool) -> String {
+fn queue_speech(snap: &SpeechSnapshot, de: bool, cs: bool) -> String {
     let current = snap.entities.iter().find(|entity| entity.domain == "media_player").map(media_title).unwrap_or_default();
     let upcoming: Vec<&str> =
         snap.media_queue.iter().map(|item| item.title.as_str()).filter(|title| !title.is_empty() && *title != current).take(3).collect();
@@ -174,6 +225,20 @@ fn queue_speech(snap: &SpeechSnapshot, de: bool) -> String {
         bits.push(format!("Als Nächstes kommt {}.", upcoming[0]));
         if upcoming.len() > 1 {
             bits.push(format!("Danach {}.", upcoming[1..].join(", ")));
+        }
+        bits.join(" ")
+    } else if cs {
+        let mut bits = Vec::new();
+        if !current.is_empty() {
+            bits.push(format!("Právě hraje {current}."));
+        }
+        if upcoming.is_empty() {
+            bits.push(if current.is_empty() { "Fronta je prázdná.".into() } else { "Ve frontě už nic dalšího není.".into() });
+            return bits.join(" ");
+        }
+        bits.push(format!("Další na řadě je {}.", upcoming[0]));
+        if upcoming.len() > 1 {
+            bits.push(format!("Potom {}.", upcoming[1..].join(", ")));
         }
         bits.join(" ")
     } else {

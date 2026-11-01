@@ -6,23 +6,24 @@ use crate::units::{entity_temp_scale, speak_temp, spoken_unit_word};
 
 use super::render_climate::{climate_query, floor_temps};
 use super::render_media::{media_action, media_status};
-use super::render_place::{color_word, empty_place, slot, speak_state};
+use super::render_place::{color_word, czech_temperature_unit, empty_place, slot, speak_state};
 use super::render_weather::weather_query;
 
 pub fn render_snapshot(snap: &SpeechSnapshot) -> SpeechRenderOut {
     let speech = pack_for(&snap.language);
     let de = is_de(&snap.language);
-    let spoken = if snap.outcome == "error" { speech.unknown.to_string() } else { interpolate(snap, speech, de) };
+    let cs = is_cs(&snap.language);
+    let spoken = if snap.outcome == "error" { speech.unknown.to_string() } else { interpolate(snap, speech, de, cs) };
     SpeechRenderOut { speech: spoken, quiet_ack: false, source: "post_execute" }
 }
 
-fn interpolate(snap: &SpeechSnapshot, speech: Speech, de: bool) -> String {
+fn interpolate(snap: &SpeechSnapshot, speech: Speech, de: bool, cs: bool) -> String {
     let name = snap.intent.name.as_str();
     let where_ = pretty_where(snap, speech);
     if is_query(name) {
         return query_speech(snap, speech, de);
     }
-    if let Some(line) = media_action(name, &where_, snap, de) {
+    if let Some(line) = media_action(name, &where_, snap, de, cs) {
         return line;
     }
     if let Some(line) = timer_action(name, speech) {
@@ -34,7 +35,7 @@ fn interpolate(snap: &SpeechSnapshot, speech: Speech, de: bool) -> String {
         "HassTurnOff" => fill(speech.turn_off, &where_, "", ""),
         "HassToggle" => fill(speech.toggle, &where_, "", ""),
         "HassLightSet" => light_set(snap, speech, &where_, de),
-        "HassClimateSetTemperature" => climate_set(snap, speech, &where_, de),
+        "HassClimateSetTemperature" => climate_set(snap, speech, &where_, de, cs),
         "HassVacuumStart" => fill(speech.vacuum_start, &where_, "", ""),
         "HassVacuumReturnToBase" => fill(speech.vacuum_dock, &where_, "", ""),
         "HassFanSetSpeed" | "HassFanSetPercentage" => fill(speech.fan_set, &where_, slot(snap, "percentage").unwrap_or(""), ""),
@@ -59,15 +60,18 @@ fn light_set(snap: &SpeechSnapshot, speech: Speech, where_: &str, de: bool) -> S
     fill(speech.light_set, where_, level, "")
 }
 
-fn climate_set(snap: &SpeechSnapshot, speech: Speech, where_: &str, de: bool) -> String {
+fn climate_set(snap: &SpeechSnapshot, speech: Speech, where_: &str, de: bool, cs: bool) -> String {
     let Some(raw) = slot(snap, "temperature") else {
         return speech.unknown.to_string();
     };
     let ha = entity_temp_scale(snap.entities.iter().find(|entity| entity.domain == "climate" || entity.domain == "weather"));
     let temp = speak_temp(raw, ha, snap.unit_system);
-    let unit = spoken_unit_word(snap.unit_system, de);
+    let temp = if cs { temp.replace('.', ",") } else { temp };
+    let unit = if cs { czech_temperature_unit(&temp, snap.unit_system) } else { spoken_unit_word(snap.unit_system, de) };
     if de {
         format!("{where_} auf {temp} {unit}.")
+    } else if cs {
+        format!("Nastavuji {where_} na {temp} {unit}.")
     } else {
         format!("{where_} is at {temp} {unit}.")
     }
@@ -85,7 +89,7 @@ fn timer_action(name: &str, speech: Speech) -> Option<String> {
 fn query_speech(snap: &SpeechSnapshot, speech: Speech, de: bool) -> String {
     let status = slot(snap, "media_status").unwrap_or("");
     if !status.is_empty() {
-        return media_status(snap, status, de);
+        return media_status(snap, status, de, &snap.language);
     }
     let entities: Vec<&SpeechEntity> = snap.entities.iter().filter(|entity| !is_infra(entity)).collect();
     if snap.intent.name == "HassClimateGetTemperature" {
@@ -96,7 +100,7 @@ fn query_speech(snap: &SpeechSnapshot, speech: Speech, de: bool) -> String {
         if entities.is_empty() {
             return String::new();
         }
-        let line = climate_query(snap, &entities, de);
+        let line = climate_query(snap, &entities, de, &snap.language);
         if !line.is_empty() {
             return line;
         }
@@ -108,7 +112,7 @@ fn query_speech(snap: &SpeechSnapshot, speech: Speech, de: bool) -> String {
         return line;
     }
     if entities.iter().any(|entity| entity.domain == "climate") {
-        let line = climate_query(snap, &entities, de);
+        let line = climate_query(snap, &entities, de, &snap.language);
         if !line.is_empty() {
             return line;
         }
@@ -118,7 +122,7 @@ fn query_speech(snap: &SpeechSnapshot, speech: Speech, de: bool) -> String {
     }
     let lights: Vec<_> = entities.iter().filter(|entity| entity.domain == "light").copied().collect();
     if lights.len() >= 2 {
-        return light_counts(&lights, de);
+        return light_counts(&lights, de, is_cs(&snap.language));
     }
     entities
         .iter()
@@ -130,6 +134,8 @@ fn query_speech(snap: &SpeechSnapshot, speech: Speech, de: bool) -> String {
             }
             Some(if de {
                 format!("{} ist {spoken}.", entity.name).trim().to_string()
+            } else if is_cs(&snap.language) {
+                format!("{}: {spoken}.", entity.name).trim().to_string()
             } else {
                 format!("{} is {spoken}.", entity.name).trim().to_string()
             })
@@ -146,7 +152,7 @@ fn cap_first(text: &str) -> String {
     }
 }
 
-fn light_counts(lights: &[&SpeechEntity], de: bool) -> String {
+fn light_counts(lights: &[&SpeechEntity], de: bool, cs: bool) -> String {
     let on = lights.iter().filter(|entity| entity.state == "on").count();
     let off = lights.iter().filter(|entity| entity.state == "off").count();
     if de {
@@ -156,6 +162,15 @@ fn light_counts(lights: &[&SpeechEntity], de: bool) -> String {
         }
         if off > 0 {
             bits.push(if off == 1 { "1 Licht aus".into() } else { format!("{off} Lichter aus") });
+        }
+        bits.join(", ") + "."
+    } else if cs {
+        let mut bits = Vec::new();
+        if on > 0 {
+            bits.push(czech_light_count(on, true));
+        }
+        if off > 0 {
+            bits.push(czech_light_count(off, false));
         }
         bits.join(", ") + "."
     } else {
@@ -168,6 +183,20 @@ fn light_counts(lights: &[&SpeechEntity], de: bool) -> String {
         }
         bits.join(", ") + "."
     }
+}
+
+fn czech_light_count(count: usize, on: bool) -> String {
+    let (singular, few, many) = if on {
+        ("světlo zapnuto", "světla zapnuta", "světel zapnuto")
+    } else {
+        ("světlo vypnuto", "světla vypnuta", "světel vypnuto")
+    };
+    let ending = match count {
+        1 => singular,
+        2..=4 => few,
+        _ => many,
+    };
+    format!("{count} {ending}")
 }
 
 fn calendar_speech(snap: &SpeechSnapshot, speech: Speech) -> String {
@@ -338,6 +367,10 @@ fn is_place_query(snap: &SpeechSnapshot, entities: &[&SpeechEntity]) -> bool {
 
 fn is_de(pack: &str) -> bool {
     pack == "de" || pack.starts_with("de-")
+}
+
+fn is_cs(pack: &str) -> bool {
+    pack == "cs" || pack.starts_with("cs-")
 }
 
 fn pack_for(language: &str) -> Speech {

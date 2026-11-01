@@ -72,7 +72,7 @@ pub(super) fn place_status(snap: &SpeechSnapshot, entities: &[&SpeechEntity], sp
 
 fn area_status(area: &str, entities: &[&SpeechEntity], speech: Speech, pack: &str, unit_system: UnitSystem) -> String {
     let pretty = speech.room_name(&fold(area)).map_or_else(|| title(area), str::to_string);
-    let facts = area_facts(&pretty, entities, pack, unit_system, is_de(pack));
+    let facts = area_facts(&pretty, entities, pack, unit_system, is_de(pack), is_cs(pack));
     if facts.is_empty() {
         return String::new();
     }
@@ -87,7 +87,7 @@ fn area_status(area: &str, entities: &[&SpeechEntity], speech: Speech, pack: &st
     }
 }
 
-fn area_facts(area: &str, entities: &[&SpeechEntity], pack: &str, unit_system: UnitSystem, de: bool) -> Vec<String> {
+fn area_facts(area: &str, entities: &[&SpeechEntity], pack: &str, unit_system: UnitSystem, de: bool, cs: bool) -> Vec<String> {
     let lights: Vec<_> = entities.iter().copied().filter(|entity| entity.domain == "light").collect();
     let sockets: Vec<_> = entities.iter().copied().filter(|entity| class_of(entity) == "outlet").collect();
     let presence: Vec<_> = entities.iter().copied().filter(|entity| is_presence(entity)).collect();
@@ -107,9 +107,9 @@ fn area_facts(area: &str, entities: &[&SpeechEntity], pack: &str, unit_system: U
         facts.push(clause(&label, entity, pack));
     }
     if generic_on {
-        facts.push(format!("{} {}", if de { "Licht" } else { "light" }, speak_state("on", pack)));
+        facts.push(format!("{} {}", if de { "Licht" } else if cs { "Světlo" } else { "light" }, speak_state("on", pack)));
     } else if generic_off {
-        facts.push(format!("{} {}", if de { "Licht" } else { "light" }, speak_state("off", pack)));
+        facts.push(format!("{} {}", if de { "Licht" } else if cs { "Světlo" } else { "light" }, speak_state("off", pack)));
     }
     for entity in &sockets {
         let label = device_label(entity, area, de);
@@ -125,16 +125,22 @@ fn area_facts(area: &str, entities: &[&SpeechEntity], pack: &str, unit_system: U
             } else {
                 "niemand da".into()
             }
+        } else if cs && occupied {
+            "někdo je doma".into()
+        } else if cs {
+            "nikdo není doma".into()
         } else if occupied {
             "occupied".into()
         } else {
             "empty".into()
         });
     }
-    if let Some(temp) = area_temp_fact(entities, unit_system, de) {
+    if let Some(temp) = area_temp_fact(entities, unit_system, de, cs) {
         facts.push(temp);
     }
-    let have_temp = facts.iter().any(|fact| fact.contains("Grad") || fact.contains("degree") || fact.contains("Fahrenheit"));
+    let have_temp = facts
+        .iter()
+        .any(|fact| fact.contains("Grad") || fact.contains("degree") || fact.contains("Fahrenheit") || fact.contains("stupň"));
     for entity in entities {
         if entity.domain == "light" || class_of(entity) == "outlet" || is_presence(entity) {
             continue;
@@ -204,7 +210,11 @@ fn generic_light(label: &str) -> bool {
 }
 
 fn clause(name: &str, entity: &SpeechEntity, pack: &str) -> String {
-    format!("{name} {}", speak_state(&entity.state, pack)).trim().to_string()
+    if is_cs(pack) {
+        format!("{name}: {}", speak_state(&entity.state, pack)).trim().to_string()
+    } else {
+        format!("{name} {}", speak_state(&entity.state, pack)).trim().to_string()
+    }
 }
 
 fn is_presence(entity: &SpeechEntity) -> bool {
@@ -242,6 +252,10 @@ fn ideo(pack: &str) -> bool {
 
 fn is_de(pack: &str) -> bool {
     pack == "de" || pack.starts_with("de-")
+}
+
+fn is_cs(pack: &str) -> bool {
+    pack == "cs" || pack.starts_with("cs-")
 }
 
 fn fold(text: &str) -> String {
