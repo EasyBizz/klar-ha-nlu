@@ -2,8 +2,8 @@ name: Klar NLU
 version: "2026.10.3"
 slug: klar_nlu
 stage: stable
-description: Lokale NLU statt Home Assistant Assist. 67 Sprachen. 100 % vs 31 % auf 9.922 DE/EN-Sätzen. Wyoming + UI.
-url: https://github.com/FABBricate-IT-Solutions/klar-ha-nlu
+description: Lokale NLU statt Home Assistant Assist. 67 Sprachen. 100 % vs 31 % auf 9.922 DE/EN-Sätzen. Wyoming + UI. Czech localization
+url: https://github.com/danielsynek94-gif/klar-ha-nlu-CZ
 arch:
   - amd64
   - aarch64
