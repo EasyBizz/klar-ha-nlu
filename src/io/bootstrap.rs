@@ -19,6 +19,7 @@ pub struct RuntimeArgs {
 }
 
 pub async fn run(args: RuntimeArgs) {
+    tracing::info!("Klar NLU [Czech Custom Edition / Fork] starting");
     let _ = std::fs::create_dir_all(&args.data_dir);
     let data_dir = if args.data_dir.is_dir() { args.data_dir.clone() } else { args.config_dir.clone() };
     let token =
