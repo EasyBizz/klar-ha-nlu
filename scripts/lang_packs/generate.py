@@ -228,7 +228,8 @@ def write_post_exec(generated: list[dict]) -> None:
         "#[allow(dead_code)]\n"
         "pub const ACTION_TEMPLATES: &[(&str, &str, &str, &str)] = &[\n"
         + "\n".join(rows)
-        + "\n];\n"
+        + "\n];\n",
+        encoding="utf-8",
     )
     print("wrote post_exec", dest)
 
