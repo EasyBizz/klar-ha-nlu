@@ -4,7 +4,7 @@ use crate::lang::Speech;
 use crate::types::{SpeechEntity, SpeechSnapshot, UnitSystem};
 use crate::units::{entity_temperature, speak_converted, spoken_unit_word};
 
-use super::render_place::{slot, speak_state};
+use super::render_place::{czech_temperature_unit, slot, speak_state};
 
 pub(super) fn floor_temps(snap: &SpeechSnapshot, speech: Speech, entities: &[&SpeechEntity], de: bool) -> String {
     let mut groups: Vec<(String, Vec<&SpeechEntity>)> = Vec::new();
@@ -32,7 +32,7 @@ pub(super) fn floor_temps(snap: &SpeechSnapshot, speech: Speech, entities: &[&Sp
         } else {
             name.as_str()
         };
-        let Some(temp) = area_temp_fact(&rows, snap.unit_system, de) else {
+        let Some(temp) = area_temp_fact(&rows, snap.unit_system, de, is_cs(&snap.language)) else {
             continue;
         };
         let pretty = speech.room_name(&fold(label)).map_or_else(|| title(label), str::to_string);
@@ -41,42 +41,56 @@ pub(super) fn floor_temps(snap: &SpeechSnapshot, speech: Speech, entities: &[&Sp
     parts.join(" ")
 }
 
-pub(super) fn climate_query(snap: &SpeechSnapshot, entities: &[&SpeechEntity], de: bool) -> String {
+pub(super) fn climate_query(snap: &SpeechSnapshot, entities: &[&SpeechEntity], de: bool, pack: &str) -> String {
     let area = slot(snap, "area_name").or_else(|| slot(snap, "area")).unwrap_or("");
     let unit = spoken_unit_word(snap.unit_system, de);
     for entity in entities {
         if let Some((raw, ha)) = entity_temperature(entity) {
             let temp = speak_converted(raw, ha, snap.unit_system);
+            let temp = if is_cs(pack) { temp.replace('.', ",") } else { temp };
             if de {
                 return format!("{area} {temp} {unit}.").trim().to_string();
+            }
+            if pack == "cs" || pack.starts_with("cs-") {
+                return format!("{area}: {temp} {}.", czech_temperature_unit(&temp, snap.unit_system)).trim().to_string();
             }
             return format!("{area} is {temp} {unit}.").trim().to_string();
         }
         if entity.domain != "climate" && entity.domain != "weather" {
             continue;
         }
-        let spoken = speak_state(&entity.state, if de { "de" } else { "en" });
+        let state_pack = if is_cs(pack) || de { pack } else { "en" };
+        let spoken = speak_state(&entity.state, state_pack);
         if entity.name.trim().is_empty() && spoken.trim().is_empty() {
             continue;
         }
         if de {
             return format!("{} ist {spoken}.", entity.name).trim().to_string();
         }
+        if pack == "cs" || pack.starts_with("cs-") {
+            return format!("{}: {spoken}.", entity.name).trim().to_string();
+        }
         return format!("{} is {spoken}.", entity.name).trim().to_string();
     }
     String::new()
 }
 
-pub(super) fn area_temp_fact(entities: &[&SpeechEntity], unit_system: UnitSystem, de: bool) -> Option<String> {
+pub(super) fn area_temp_fact(entities: &[&SpeechEntity], unit_system: UnitSystem, de: bool, cs: bool) -> Option<String> {
     for entity in entities {
         let Some((raw, ha)) = entity_temperature(entity) else {
             continue;
         };
         let temp = speak_converted(raw, ha, unit_system);
-        let unit = spoken_unit_word(unit_system, de);
+        let temp = if cs { temp.replace('.', ",") } else { temp };
+        let unit =
+            if cs { czech_temperature_unit(&temp, unit_system) } else { spoken_unit_word(unit_system, de) };
         return Some(format!("{temp} {unit}"));
     }
     None
+}
+
+fn is_cs(pack: &str) -> bool {
+    pack == "cs" || pack.starts_with("cs-")
 }
 
 fn title(raw: &str) -> String {
