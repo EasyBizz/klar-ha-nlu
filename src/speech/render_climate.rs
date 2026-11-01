@@ -82,8 +82,7 @@ pub(super) fn area_temp_fact(entities: &[&SpeechEntity], unit_system: UnitSystem
         };
         let temp = speak_converted(raw, ha, unit_system);
         let temp = if cs { temp.replace('.', ",") } else { temp };
-        let unit =
-            if cs { czech_temperature_unit(&temp, unit_system) } else { spoken_unit_word(unit_system, de) };
+        let unit = if cs { czech_temperature_unit(&temp, unit_system) } else { spoken_unit_word(unit_system, de) };
         return Some(format!("{temp} {unit}"));
     }
     None

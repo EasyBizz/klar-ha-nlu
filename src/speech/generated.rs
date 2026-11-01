@@ -19,7 +19,7 @@ pub const ACTION_TEMPLATES: &[(&str, &str, &str, &str)] = &[
     ("en-GB", "{target} is on.", "{target} is off.", "The temperature {loc}."),
     ("pt-BR", "{target} esta ligado.", "{target} esta desligado.", "A temperatura {loc}."),
     ("af", "{target} is aan.", "{target} is af.", "Die temperatuur {loc}."),
-    ("cs", "{target} je zapnute.", "{target} je vypnute.", "Teplota {loc}."),
+    ("cs", "Zapínám {target}.", "Vypínám {target}.", "Teplota v {loc}."),
     ("sk", "{target} je zapnute.", "{target} je vypnute.", "Teplota {loc}."),
     ("pl", "{target} jest wlaczone.", "{target} jest wylaczone.", "Temperatura {loc}."),
     ("hu", "{target} be van kapcsolva.", "{target} ki van kapcsolva.", "A homerseklet {loc}."),

@@ -157,79 +157,79 @@ Lampotila Y. → Totta kai, sir. Lampotila Y.",
     (
         "cs",
         "default",
-        "X je zapnute. → X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Teplota Y.",
+        "Zapínám X. → Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Teplota v Y.",
     ),
     (
         "cs",
         "butler",
-        "X je zapnute. → Velmi dobre. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Velmi dobre. Teplota Y.",
+        "Zapínám X. → Velmi dobre. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Velmi dobre. Teplota v Y.",
     ),
     (
         "cs",
         "locker",
-        "X je zapnute. → Jasne. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Jasne. Teplota Y.",
+        "Zapínám X. → Jasne. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Jasne. Teplota v Y.",
     ),
     (
         "cs",
         "fuersorglich",
-        "X je zapnute. → Hned to udelam. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Hned to udelam. Teplota Y.",
+        "Zapínám X. → Hned to udelam. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Hned to udelam. Teplota v Y.",
     ),
     (
         "cs",
         "party",
-        "X je zapnute. → Jedeme. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Jedeme. Teplota Y.",
+        "Zapínám X. → Jedeme. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Jedeme. Teplota v Y.",
     ),
     (
         "cs",
         "grantig",
-        "X je zapnute. → No dobre. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → No dobre. Teplota Y.",
+        "Zapínám X. → No dobre. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → No dobre. Teplota v Y.",
     ),
     (
         "cs",
         "sarkastisch",
-        "X je zapnute. → Samozrejme. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Samozrejme. Teplota Y.",
+        "Zapínám X. → Samozrejme. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Samozrejme. Teplota v Y.",
     ),
     (
         "cs",
         "pirat",
-        "X je zapnute. → Aye. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Aye. Teplota Y.",
+        "Zapínám X. → Aye. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Aye. Teplota v Y.",
     ),
     (
         "cs",
         "hippie",
-        "X je zapnute. → Pohoda. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Pohoda. Teplota Y.",
+        "Zapínám X. → Pohoda. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Pohoda. Teplota v Y.",
     ),
     (
         "cs",
         "gollum",
-        "X je zapnute. → Ano. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Ano. Teplota Y.",
+        "Zapínám X. → Ano. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Ano. Teplota v Y.",
     ),
     (
         "cs",
         "jarvis",
-        "X je zapnute. → Samozřejmě, pane. X je zapnute.
-X je vypnute. → X je vypnute.
-Teplota Y. → Samozřejmě, pane. Teplota Y.",
+        "Zapínám X. → Samozřejmě, pane. Zapínám X.
+Vypínám X. → Vypínám X.
+Teplota v Y. → Samozřejmě, pane. Teplota v Y.",
     ),
     (
         "bg",

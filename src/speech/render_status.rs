@@ -107,9 +107,29 @@ fn area_facts(area: &str, entities: &[&SpeechEntity], pack: &str, unit_system: U
         facts.push(clause(&label, entity, pack));
     }
     if generic_on {
-        facts.push(format!("{} {}", if de { "Licht" } else if cs { "Světlo" } else { "light" }, speak_state("on", pack)));
+        facts.push(format!(
+            "{} {}",
+            if de {
+                "Licht"
+            } else if cs {
+                "Světlo"
+            } else {
+                "light"
+            },
+            speak_state("on", pack)
+        ));
     } else if generic_off {
-        facts.push(format!("{} {}", if de { "Licht" } else if cs { "Světlo" } else { "light" }, speak_state("off", pack)));
+        facts.push(format!(
+            "{} {}",
+            if de {
+                "Licht"
+            } else if cs {
+                "Světlo"
+            } else {
+                "light"
+            },
+            speak_state("off", pack)
+        ));
     }
     for entity in &sockets {
         let label = device_label(entity, area, de);
@@ -138,9 +158,8 @@ fn area_facts(area: &str, entities: &[&SpeechEntity], pack: &str, unit_system: U
     if let Some(temp) = area_temp_fact(entities, unit_system, de, cs) {
         facts.push(temp);
     }
-    let have_temp = facts
-        .iter()
-        .any(|fact| fact.contains("Grad") || fact.contains("degree") || fact.contains("Fahrenheit") || fact.contains("stupň"));
+    let have_temp =
+        facts.iter().any(|fact| fact.contains("Grad") || fact.contains("degree") || fact.contains("Fahrenheit") || fact.contains("stupň"));
     for entity in entities {
         if entity.domain == "light" || class_of(entity) == "outlet" || is_presence(entity) {
             continue;
