@@ -79,6 +79,69 @@ fn climate_set_speaks_degrees() {
 }
 
 #[test]
+fn czech_climate_templates_use_czech_wording_and_temperature_units() {
+    let mut set = snap(
+        "HassClimateSetTemperature",
+        vec![
+            SpeechSlot { name: "name".into(), value: "Topení".into() },
+            SpeechSlot { name: "temperature".into(), value: "21".into() },
+        ],
+        vec![],
+    );
+    set.language = "cs".into();
+    assert_eq!(render_snapshot(&set).speech, "Nastavuji Topení na 21 stupňů.");
+
+    let climate = entity(
+        "climate.obyvak",
+        "Topení",
+        "climate",
+        "heat",
+        BTreeMap::from([
+            ("current_temperature".into(), serde_json::json!(21.5)),
+            ("temperature_unit".into(), serde_json::json!("°C")),
+        ]),
+    );
+    let mut query = snap(
+        "HassClimateGetTemperature",
+        vec![SpeechSlot { name: "area_name".into(), value: "Obývák".into() }],
+        vec![climate],
+    );
+    query.language = "cs".into();
+    assert_eq!(render_snapshot(&query).speech, "Obývák: 21,5 stupně.");
+}
+
+#[test]
+fn czech_entity_and_vacuum_states_are_translated() {
+    let mut switch = snap(
+        "HassGetState",
+        vec![SpeechSlot { name: "entity_id".into(), value: "switch.kavovar".into() }],
+        vec![entity("switch.kavovar", "Kávovar", "switch", "off", BTreeMap::new())],
+    );
+    switch.language = "cs".into();
+    assert_eq!(render_snapshot(&switch).speech, "Kávovar: vypnuto.");
+    switch.entities[0].state = "on".into();
+    assert_eq!(render_snapshot(&switch).speech, "Kávovar: zapnuto.");
+
+    switch.entities[0].state = "off".into();
+    switch.language = "en".into();
+    assert_eq!(render_snapshot(&switch).speech, "Kávovar is off.");
+    switch.language = "de".into();
+    assert_eq!(render_snapshot(&switch).speech, "Kávovar ist aus.");
+
+    let vacuum = entity("vacuum.robot", "Robotický vysavač", "vacuum", "docked", BTreeMap::new());
+    let mut query = snap(
+        "HassGetState",
+        vec![SpeechSlot { name: "area_name".into(), value: "Obývák".into() }],
+        vec![vacuum],
+    );
+    query.language = "cs".into();
+    assert!(render_snapshot(&query).speech.contains("v doku"), "{}", render_snapshot(&query).speech);
+
+    query.entities[0].state = "cleaning".into();
+    assert!(render_snapshot(&query).speech.contains("uklízí"), "{}", render_snapshot(&query).speech);
+}
+
+#[test]
 fn climate_speech_uses_operator_unit() {
     let mut set = snap(
         "HassClimateSetTemperature",
