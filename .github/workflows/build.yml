@@ -18,7 +18,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  GHCR: ghcr.io/fabbricate-it-solutions/klar-nlu
+  GHCR: ghcr.io/danielsynek94-gif/klar-ha-nlu-CZ
 
 jobs:
   build:
