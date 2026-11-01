@@ -34,4 +34,4 @@ schema:
   token: str?
   support_bundle: bool?
   ui_locale: str?
-image: ghcr.io/danielsynek94-gif/klar-ha-nlu-CZ
+image: ghcr.io/danielsynek94-gif/klar-ha-nlu-cz-{arch}
